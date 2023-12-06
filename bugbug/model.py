@@ -78,21 +78,13 @@ def classification_report_imbalanced_values(
     precision, recall, f1, support = precision_recall_fscore_support(
         y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
     )
-    # Specificity
-    specificity = specificity_score(
-        y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
-    )
+
     # Geometric mean
     geo_mean = geometric_mean_score(
         y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
     )
     # Index balanced accuracy
-    iba_gmean = make_index_balanced_accuracy(alpha=alpha, squared=True)(
-        geometric_mean_score
-    )
-    iba = iba_gmean(
-        y_true, y_pred, labels=labels, average=None, sample_weight=sample_weight
-    )
+
 
     result = {"targets": {}}
 
@@ -100,20 +92,16 @@ def classification_report_imbalanced_values(
         result["targets"][target_names[i]] = {
             "precision": precision[i],
             "recall": recall[i],
-            "specificity": specificity[i],
             "f1": f1[i],
             "geo_mean": geo_mean[i],
-            "iba": iba[i],
             "support": support[i],
         }
 
     result["average"] = {
         "precision": np.average(precision, weights=support),
         "recall": np.average(recall, weights=support),
-        "specificity": np.average(specificity, weights=support),
         "f1": np.average(f1, weights=support),
         "geo_mean": np.average(geo_mean, weights=support),
-        "iba": np.average(iba, weights=support),
         "support": np.sum(support),
     }
 
@@ -353,7 +341,7 @@ class Model:
         return feature_report
 
     def train_test_split(self, X, y):
-        return train_test_split(X, y, test_size=0.1, random_state=0)
+        return train_test_split(X, y, test_size=0.2, random_state=0)
 
     def evaluation(self):
         """Subclasses can implement their own additional evaluation."""
@@ -371,9 +359,10 @@ class Model:
 
         # Extract features from the items.
         X = self.extraction_pipeline.transform(X_gen)
-
+        print("X feature: ", type(X))
         # Calculate labels.
         y = np.array(y)
+        print("y: ", y)
         self.le.fit(y)
 
         if limit:

@@ -36,12 +36,8 @@ class DefectModel(BugModel):
             bug_features.HasURL(),
             bug_features.HasW3CURL(),
             bug_features.HasGithubURL(),
-            bug_features.Whiteboard(),
             bug_features.BlockedBugsNumber(),
-            bug_features.EverAffected(),
-            bug_features.AffectedThenUnaffected(),
             bug_features.Product(),
-            bug_features.Component(),
         ]
 
         if historical:
@@ -90,7 +86,7 @@ class DefectModel(BugModel):
                 ("sampler", BorderlineSMOTE(random_state=0)),
                 (
                     "estimator",
-                    xgboost.XGBClassifier(n_jobs=utils.get_physical_cpu_count()),
+                    xgboost.XGBClassifier(n_jobs=utils.get_physical_cpu_count(), scale_pos_weight=2.5),
                 ),
             ]
         )
@@ -128,7 +124,6 @@ class DefectModel(BugModel):
             elif kind == "defect_enhancement_task":
                 if category != "nobug":
                     classes[int(bug_id)] = "defect"
-
         defect_enhancement_task_e = dict(labels.get_labels("defect_enhancement_task_e"))
         defect_enhancement_task_p = dict(labels.get_labels("defect_enhancement_task_p"))
         defect_enhancement_task_s = dict(labels.get_labels("defect_enhancement_task_s"))
@@ -263,7 +258,6 @@ class DefectModel(BugModel):
 
     def get_labels(self) -> tuple[dict[int, Any], list[Any]]:
         classes = self.get_bugbug_labels("bug")
-
         logger.info("%d bugs", (sum(label == 1 for label in classes.values())))
         logger.info("%d non-bugs", (sum(label == 0 for label in classes.values())))
 
