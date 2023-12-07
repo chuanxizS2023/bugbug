@@ -353,7 +353,7 @@ class Model:
         return feature_report
 
     def train_test_split(self, X, y):
-        return train_test_split(X, y, test_size=0.1, random_state=0)
+        return train_test_split(X, y, test_size=0.2, random_state=0)
 
     def evaluation(self):
         """Subclasses can implement their own additional evaluation."""
@@ -420,45 +420,45 @@ class Model:
         logger.info("Model trained")
 
         feature_names = self.get_human_readable_feature_names()
-        if self.calculate_importance and len(feature_names):
-            explainer = shap.TreeExplainer(self.clf.named_steps["estimator"])
-            _X_train = get_transformer_pipeline(self.clf).transform(X_train)
-            shap_values = explainer.shap_values(_X_train)
-
-            # In the binary case, sometimes shap returns a single shap values matrix.
-            if is_binary and not isinstance(shap_values, list):
-                shap_values = [-shap_values, shap_values]
-                summary_plot_value = shap_values[1]
-                summary_plot_type = "layered_violin"
-            else:
-                summary_plot_value = shap_values
-                summary_plot_type = None
-
-            shap.summary_plot(
-                summary_plot_value,
-                to_array(_X_train),
-                feature_names=feature_names,
-                class_names=self.class_names,
-                plot_type=summary_plot_type,
-                show=False,
-            )
-
-            matplotlib.pyplot.savefig("feature_importance.png", bbox_inches="tight")
-            matplotlib.pyplot.xlabel("Impact on model output")
-            matplotlib.pyplot.clf()
-
-            important_features = self.get_important_features(
-                importance_cutoff, shap_values
-            )
-
-            self.print_feature_importances(important_features)
-
-            # Save the important features in the metric report too
-            feature_report = self.save_feature_importances(
-                important_features, feature_names
-            )
-
-            tracking_metrics["feature_report"] = feature_report
+        # if self.calculate_importance and len(feature_names):
+        #     explainer = shap.TreeExplainer(self.clf.named_steps["estimator"])
+        #     _X_train = get_transformer_pipeline(self.clf).transform(X_train)
+        #     shap_values = explainer.shap_values(_X_train)
+        #
+        #     # In the binary case, sometimes shap returns a single shap values matrix.
+        #     if is_binary and not isinstance(shap_values, list):
+        #         shap_values = [-shap_values, shap_values]
+        #         summary_plot_value = shap_values[1]
+        #         summary_plot_type = "layered_violin"
+        #     else:
+        #         summary_plot_value = shap_values
+        #         summary_plot_type = None
+        #
+        #     shap.summary_plot(
+        #         summary_plot_value,
+        #         to_array(_X_train),
+        #         feature_names=feature_names,
+        #         class_names=self.class_names,
+        #         plot_type=summary_plot_type,
+        #         show=False,
+        #     )
+        #
+        #     matplotlib.pyplot.savefig("feature_importance.png", bbox_inches="tight")
+        #     matplotlib.pyplot.xlabel("Impact on model output")
+        #     matplotlib.pyplot.clf()
+        #
+        #     important_features = self.get_important_features(
+        #         importance_cutoff, shap_values
+        #     )
+        #
+        #     self.print_feature_importances(important_features)
+        #
+        #     # Save the important features in the metric report too
+        #     feature_report = self.save_feature_importances(
+        #         important_features, feature_names
+        #     )
+        #
+        #     tracking_metrics["feature_report"] = feature_report
 
         logger.info("Training Set scores:")
         y_pred = self.clf.predict(X_train)
@@ -608,11 +608,13 @@ class Model:
     @staticmethod
     def load(model_directory: str) -> "Model":
         model_path = path.join(model_directory, "model.pkl")
+        print("loading model from", model_path)
         with open(model_path, "rb") as f:
             model = pickle.load(f)
 
         xgboost_model_path = path.join(model_directory, "xgboost.ubj")
         if path.exists(xgboost_model_path):
+            print("loading xgboost model from", xgboost_model_path)
             model.clf.named_steps["estimator"].load_model(xgboost_model_path)
 
         return model
